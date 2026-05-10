@@ -69,8 +69,9 @@ public class UserService {
     }
 
     public List<String> getPermissionsByRole(Role rol) {
-        return switch (rol) {
-            case ADMIN -> List.of(
+
+        if (rol == Role.ADMIN) {
+            return List.of(
                 "USERS_READ",
                 "USERS_WRITE",
                 "PYMES_READ",
@@ -81,18 +82,26 @@ public class UserService {
                 "ORDERS_WRITE",
                 "DASHBOARD_READ"
             );
-            case PYME -> List.of(
+        }
+
+        if (rol == Role.PYME) {
+            return List.of(
                 "PYME_DASHBOARD_READ",
                 "PRODUCTS_READ",
                 "PRODUCTS_WRITE",
                 "ORDERS_READ",
                 "ORDERS_WRITE"
             );
-            case REPARTIDOR -> List.of(
+        }
+
+        if (rol == Role.REPARTIDOR) {
+            return List.of(
                 "DELIVERIES_READ",
                 "DELIVERIES_UPDATE"
             );
-        };
+        }
+
+        return List.of();
     }
 
     public User changeUserRole(Long userId, Role newRole) {

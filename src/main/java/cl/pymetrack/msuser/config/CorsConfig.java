@@ -18,6 +18,8 @@ public class CorsConfig {
         // Permitir frontend en localhost:3000
         config.addAllowedOrigin("http://localhost:3000");
         config.addAllowedOrigin("http://127.0.0.1:3000");
+        config.addAllowedOrigin("http://localhost:3001");
+        config.addAllowedOrigin("http://127.0.0.1:3001");
         
         // Permitir métodos HTTP comunes
         config.addAllowedMethod("GET");

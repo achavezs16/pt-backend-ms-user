@@ -15,7 +15,6 @@ cl/pymetrack/msuser/client/PymeClient$PymeData.class
 cl/pymetrack/msuser/util/PasswordHashGenerator.class
 cl/pymetrack/msuser/config/DemoDataInitializer.class
 cl/pymetrack/msuser/controller/AuthController.class
-cl/pymetrack/msuser/service/UserService$1.class
 cl/pymetrack/msuser/dto/ChangePasswordResponse.class
 cl/pymetrack/msuser/repository/PymeRepository.class
 cl/pymetrack/msuser/config/CorsConfig.class
