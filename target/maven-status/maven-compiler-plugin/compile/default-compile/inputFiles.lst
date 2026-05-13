@@ -12,7 +12,6 @@
 /Users/alvaro/Desktop/ING. INFORMÁTICA/V SEM - 2026/FULLSTACK III/ENCARGO 2/pymetrack-mvp/backend/ms-user/src/main/java/cl/pymetrack/msuser/service/UserDetailsServiceImpl.java
 /Users/alvaro/Desktop/ING. INFORMÁTICA/V SEM - 2026/FULLSTACK III/ENCARGO 2/pymetrack-mvp/backend/ms-user/src/main/java/cl/pymetrack/msuser/model/Permission.java
 /Users/alvaro/Desktop/ING. INFORMÁTICA/V SEM - 2026/FULLSTACK III/ENCARGO 2/pymetrack-mvp/backend/ms-user/src/main/java/cl/pymetrack/msuser/controller/AdminController.java
-/Users/alvaro/Desktop/ING. INFORMÁTICA/V SEM - 2026/FULLSTACK III/ENCARGO 2/pymetrack-mvp/backend/ms-user/src/main/java/cl/pymetrack/msuser/config/CorsConfig.java
 /Users/alvaro/Desktop/ING. INFORMÁTICA/V SEM - 2026/FULLSTACK III/ENCARGO 2/pymetrack-mvp/backend/ms-user/src/main/java/cl/pymetrack/msuser/repository/PymeRepository.java
 /Users/alvaro/Desktop/ING. INFORMÁTICA/V SEM - 2026/FULLSTACK III/ENCARGO 2/pymetrack-mvp/backend/ms-user/src/main/java/cl/pymetrack/msuser/model/Pyme.java
 /Users/alvaro/Desktop/ING. INFORMÁTICA/V SEM - 2026/FULLSTACK III/ENCARGO 2/pymetrack-mvp/backend/ms-user/src/main/java/cl/pymetrack/msuser/exception/AuthenticationException.java
