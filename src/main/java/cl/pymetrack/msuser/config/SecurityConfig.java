@@ -1,6 +1,7 @@
 package cl.pymetrack.msuser.config;
 
 import cl.pymetrack.msuser.security.JwtAuthenticationFilter;
+import cl.pymetrack.msuser.security.JwtService;
 import cl.pymetrack.msuser.service.UserDetailsServiceImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,6 +31,14 @@ public class SecurityConfig {
     }
 
     @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter(
+            JwtService jwtService,
+            UserDetailsServiceImpl userDetailsService
+    ) {
+        return new JwtAuthenticationFilter(jwtService, userDetailsService);
+    }
+
+    @Bean
     public SecurityFilterChain filterChain(
             HttpSecurity http,
             JwtAuthenticationFilter jwtAuthenticationFilter
@@ -47,7 +56,7 @@ public class SecurityConfig {
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/users/**").hasRole("ADMIN")
-                .requestMatchers("/pyme/**").hasAnyRole("PYME", "ADMIN")
+                .requestMatchers("/pyme/**").hasAnyRole("ADMIN", "PYME")
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())
