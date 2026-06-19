@@ -35,7 +35,7 @@ public class AdminController {
     }
 
     @GetMapping("/stats")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<Map<String, Object>> getSystemStats() {
         Map<String, Object> stats = Map.of(
             "totalAdmins", userService.countActiveUsersByRole(Role.ADMIN),

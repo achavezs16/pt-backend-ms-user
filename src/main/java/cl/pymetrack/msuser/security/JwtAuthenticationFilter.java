@@ -8,8 +8,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -17,7 +17,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-@Component
+//@Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
@@ -37,28 +37,50 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
+        String path = request.getRequestURI();
+        String jwt = getJwtFromRequest(request);
+
+        logger.info("JWT FILTER -> path: {}", path);
+        logger.info("JWT FILTER -> Authorization presente: {}", jwt != null);
+
         try {
-            String jwt = getJwtFromRequest(request);
-
-            if (StringUtils.hasText(jwt) && SecurityContextHolder.getContext().getAuthentication() == null) {
+            if (StringUtils.hasText(jwt)) {
                 String email = jwtService.extractUsername(jwt);
+                logger.info("JWT FILTER -> email extraído: {}", email);
 
-                if (jwtService.validateToken(jwt, email)) {
+                boolean valid = jwtService.validateToken(jwt, email);
+                logger.info("JWT FILTER -> token válido: {}", valid);
+
+                if (valid) {
                     UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-                    UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                            userDetails,
-                            null,
+                    logger.info(
+                            "JWT FILTER -> usuario cargado: {} authorities: {}",
+                            userDetails.getUsername(),
                             userDetails.getAuthorities()
-                        );
+                    );
 
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    userDetails.getAuthorities()
+                            );
+
+                    authentication.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request)
+                    );
+
                     SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                    logger.info(
+                            "JWT FILTER -> authentication seteado: {}",
+                            SecurityContextHolder.getContext().getAuthentication()
+                    );
                 }
             }
         } catch (Exception ex) {
-            logger.warn("No se pudo autenticar el token JWT: {}", ex.getMessage());
+            logger.error("JWT FILTER -> error autenticando token: {}", ex.getMessage(), ex);
         }
 
         filterChain.doFilter(request, response);
