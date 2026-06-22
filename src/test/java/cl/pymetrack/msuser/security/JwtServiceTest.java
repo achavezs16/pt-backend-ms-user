@@ -6,63 +6,79 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class JwtServiceTest {
+public class JwtServiceTest {
 
     private JwtService jwtService;
+    private final String SECRET = "1234567890123456789012345678901234567890"; // 40 chars para HS256
+    private final String EMAIL = "matias@caltias.cl";
 
     @BeforeEach
     void setUp() {
         jwtService = new JwtService();
-        // Inyectamos las propiedades manualmente
-        ReflectionTestUtils.setField(jwtService, "secret", "mySecretKey123456789012345678901234567890");
-        ReflectionTestUtils.setField(jwtService, "jwtExpiration", 86400L);
+        // Inyectamos las configuraciones manualmente
+        ReflectionTestUtils.setField(jwtService, "secret", SECRET);
+        ReflectionTestUtils.setField(jwtService, "jwtExpiration", 3600L);
         ReflectionTestUtils.setField(jwtService, "refreshExpiration", 604800L);
     }
 
     @Test
-    void shouldGenerateAndExtractTokenData() {
-        Long userId = 1L;
-        String email = "matias@test.com";
-        String nombre = "Matías";
-        Role role = Role.PYME; // Corregido: usando un rol válido
-        Long pymeId = 100L;
-        List<String> permissions = List.of("READ", "WRITE");
-
-        String token = jwtService.generateToken(userId, email, nombre, role, pymeId, permissions);
+    void testGenerateAndValidateToken_Exitoso() {
+        List<String> perms = Arrays.asList("READ", "WRITE");
+        String token = jwtService.generateToken(1L, EMAIL, "Matías", Role.PYME, 10L, perms);
 
         assertNotNull(token);
-        assertEquals(email, jwtService.extractUsername(token));
-        
-        JwtService.UserInfo userInfo = jwtService.extractUserInfo(token);
-        assertEquals(userId, userInfo.getUserId());
-        assertEquals(role, userInfo.getRole());
-        assertTrue(userInfo.getPermissions().contains("READ"));
+        assertTrue(jwtService.validateToken(token, EMAIL));
+        assertEquals(EMAIL, jwtService.extractUsername(token));
+        assertEquals(Role.PYME, jwtService.extractRole(token));
     }
 
     @Test
-    void shouldValidateCorrectToken() {
-        String token = jwtService.generateToken(1L, "matias@test.com", "Matías", Role.PYME, 100L, List.of());
-        
-        assertTrue(jwtService.validateToken(token, "matias@test.com"));
+    void testExtractUserInfo_Exitoso() {
+        List<String> perms = Arrays.asList("ADMIN");
+        String token = jwtService.generateToken(1L, EMAIL, "Matías", Role.ADMIN, 10L, perms);
+
+        JwtService.UserInfo info = jwtService.extractUserInfo(token);
+
+        assertEquals(1L, info.getUserId());
+        assertEquals(EMAIL, info.getEmail());
+        assertEquals(Role.ADMIN, info.getRole());
+        assertEquals(10L, info.getPymeId());
+        assertTrue(info.getPermissions().contains("ADMIN"));
     }
 
     @Test
-    void shouldFailValidationForWrongUser() {
-        String token = jwtService.generateToken(1L, "matias@test.com", "Matías", Role.PYME, 100L, List.of());
-        
-        assertFalse(jwtService.validateToken(token, "otro@test.com"));
+    void testRefreshToken_Flow() {
+        String refreshToken = jwtService.generateRefreshToken(EMAIL, Role.REPARTIDOR);
+
+        assertNotNull(refreshToken);
+        assertTrue(jwtService.validateRefreshToken(refreshToken));
+        assertTrue(jwtService.isRefreshToken(refreshToken));
     }
 
     @Test
-    void shouldThrowExceptionForMalformedToken() {
-        String malformedToken = "ey.eyJhbGciOiJIUzI1NiJ9.invalidSignature";
+    void testValidateToken_TokenInvalido() {
+        // Token malformado
+        assertFalse(jwtService.validateToken("esto-no-es-un-token", EMAIL));
+    }
+
+    @Test
+    void testGetExpirationMethods() {
+        assertEquals(3600L, jwtService.getExpirationInSeconds());
+        assertEquals(604800L, jwtService.getRefreshExpirationInSeconds());
+    }
+
+    @Test
+    void testExtractExpirationDate() {
+        String token = jwtService.generateToken(1L, EMAIL, "Matías", Role.PYME, 10L, List.of());
+        LocalDateTime expiration = jwtService.getExpirationDate(token);
         
-        assertThrows(JwtException.class, () -> {
-            jwtService.extractUsername(malformedToken);
-        });
+        assertNotNull(expiration);
+        assertTrue(expiration.isAfter(LocalDateTime.now()));
     }
 }

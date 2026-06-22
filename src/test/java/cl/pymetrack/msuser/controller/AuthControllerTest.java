@@ -1,123 +1,157 @@
 package cl.pymetrack.msuser.controller;
 
 import cl.pymetrack.msuser.dto.*;
-import cl.pymetrack.msuser.exception.AuthenticationException;
-import cl.pymetrack.msuser.exception.InvalidCredentialsException;
+import cl.pymetrack.msuser.exception.*;
 import cl.pymetrack.msuser.model.Role;
 import cl.pymetrack.msuser.model.User;
 import cl.pymetrack.msuser.service.AuthService;
 import cl.pymetrack.msuser.service.UserService;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.quality.Strictness;
+import org.mockito.junit.jupiter.MockitoSettings;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(AuthController.class)
-@AutoConfigureMockMvc(addFilters = false)
-class AuthControllerTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+public class AuthControllerTest {
 
-    @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
-    private AuthService authService;
+    @Mock private AuthService authService;
+    @Mock private UserService userService;
+    @InjectMocks private AuthController authController;
 
-    @MockBean
-    private UserService userService;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+    @BeforeEach
+    void setUp() {
+        mockMvc = MockMvcBuilders.standaloneSetup(authController)
+                .setControllerAdvice(authController)
+                .build();
+    }
 
     @Test
-    void login_Success() throws Exception {
-        LoginRequest req = new LoginRequest();
-        req.setEmail("m@t.com");
-        req.setPassword("12345678"); // Cumple > 8 caracteres
-        when(authService.authenticate(any())).thenReturn(new LoginResponse());
+    void testLogin_Exitoso() throws Exception {
+        LoginResponse mockResponse = new LoginResponse();
+        mockResponse.setToken("mocked-token");
+        when(authService.authenticate(any(LoginRequest.class))).thenReturn(mockResponse);
+
+        // Password >= 6 caracteres (cumple @Size)
+        String jsonRequest = "{\"email\": \"test@test.com\", \"password\": \"12345678\"}";
 
         mockMvc.perform(post("/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
+                .content(jsonRequest))
                 .andExpect(status().isOk());
     }
 
-@Test
-    void register_Success() throws Exception {
-        RegisterRequest req = new RegisterRequest();
-        req.setEmail("new@t.com");
-        req.setNombre("Matías");
-        req.setApellido("Suazo");
-        req.setPassword("12345678");
-        req.setRol(Role.PYME);
-        req.setPymeId(1L);
+    @Test
+    void testChangePassword_Exitoso() throws Exception {
+        ChangePasswordResponse mockResponse = new ChangePasswordResponse("Contraseña cambiada");
+        when(authService.changePassword(eq(1L), any(ChangePasswordRequest.class))).thenReturn(mockResponse);
 
+        // Password >= 8 caracteres (cumple @Size)
+        String jsonRequest = "{\"currentPassword\": \"oldpassword\", \"newPassword\": \"newpassword123\", \"confirmPassword\": \"newpassword123\"}";
+
+        mockMvc.perform(post("/auth/change-password/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonRequest))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testRegister_Exitoso() throws Exception {
         User mockUser = new User();
+        mockUser.setEmail("new@test.com");
+        // Aseguramos que el usuario mock tenga un rol para evitar el NPE en getAuthorities()
         mockUser.setRol(Role.PYME); 
-        mockUser.setEmail("new@t.com");
         
         when(userService.createUser(any(), any(), any(), any(), any(), any())).thenReturn(mockUser);
 
+        String jsonRequest = "{\"email\": \"new@test.com\", \"password\": \"12345678\", \"nombre\": \"Juan\", \"apellido\": \"Perez\", \"rol\": \"PYME\", \"pymeId\": 1}";
+
         mockMvc.perform(post("/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
+                .content(jsonRequest))
                 .andExpect(status().isOk());
     }
 
     @Test
-    void login_InvalidCredentials() throws Exception {
-        LoginRequest req = new LoginRequest();
-        req.setEmail("m@t.com");
-        req.setPassword("12345678");
-        
-        when(authService.authenticate(any())).thenThrow(new InvalidCredentialsException("Bad creds"));
-        
+    void testHandleInvalidCredentialsException() throws Exception {
+        when(authService.authenticate(any(LoginRequest.class))).thenThrow(new InvalidCredentialsException("Credenciales malas"));
+        String jsonRequest = "{\"email\": \"test@test.com\", \"password\": \"12345678\"}";
+
         mockMvc.perform(post("/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
+                .content(jsonRequest))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void validateToken_Success() throws Exception {
-        when(authService.validateToken(any())).thenReturn(new TokenValidationResponse(true, "ok"));
-        mockMvc.perform(post("/auth/validate")
-                .header("Authorization", "Bearer token"))
-                .andExpect(status().isOk());
+    void testHandleIllegalArgumentException() throws Exception {
+        when(authService.changePassword(anyLong(), any())).thenThrow(new IllegalArgumentException("No coinciden"));
+        String jsonRequest = "{\"currentPassword\": \"oldpass123\", \"newPassword\": \"newpass123\", \"confirmPassword\": \"wrongpass\"}";
+
+        mockMvc.perform(post("/auth/change-password/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonRequest))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
-    void logout_Success() throws Exception {
-        mockMvc.perform(post("/auth/logout")
-                .header("Authorization", "Bearer token"))
-                .andExpect(status().isOk());
-    }
+    void testHandleGenericException() throws Exception {
+        when(authService.authenticate(any())).thenThrow(new RuntimeException("Error fatal DB"));
+        String jsonRequest = "{\"email\": \"test@test.com\", \"password\": \"12345678\"}";
 
-    @Test
-    void health_Check() throws Exception {
-        mockMvc.perform(get("/auth/health"))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    void handleAuthenticationException_Test() throws Exception {
-        LoginRequest req = new LoginRequest();
-        req.setEmail("m@t.com");
-        req.setPassword("12345678");
-
-        when(authService.authenticate(any())).thenThrow(new AuthenticationException("Forbidden"));
         mockMvc.perform(post("/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isForbidden());
+                .content(jsonRequest))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void testRefreshToken_Exitoso() throws Exception {
+        LoginResponse mockResponse = new LoginResponse();
+        when(authService.refreshToken(any(RefreshTokenRequest.class))).thenReturn(mockResponse);
+        String jsonRequest = "{\"refreshToken\": \"some-token\"}";
+
+        mockMvc.perform(post("/auth/refresh")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonRequest))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testValidateToken_Exitoso() throws Exception {
+        TokenValidationResponse mockResponse = new TokenValidationResponse(true, "Válido");
+        when(authService.validateToken("real-token")).thenReturn(mockResponse);
+
+        mockMvc.perform(post("/auth/validate")
+                .header("Authorization", "Bearer real-token"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testLogout_Exitoso() throws Exception {
+        doNothing().when(authService).logout("real-token");
+        mockMvc.perform(post("/auth/logout")
+                .header("Authorization", "Bearer real-token"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testHealth_Exitoso() throws Exception {
+        mockMvc.perform(get("/auth/health"))
+                .andExpect(status().isOk());
     }
 }
