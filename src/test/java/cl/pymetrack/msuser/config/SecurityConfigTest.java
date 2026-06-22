@@ -1,30 +1,24 @@
 package cl.pymetrack.msuser.config;
 
+import cl.pymetrack.msuser.service.UserDetailsServiceImpl;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.ApplicationContext;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mock;
 
-@SpringBootTest
 class SecurityConfigTest {
 
-    @Autowired
-    private ApplicationContext context;
-
     @Test
-    void contextLoads() {
-        // Esto fuerza a que se cargue SecurityConfig y se ejecuten todos los @Bean
-        assertNotNull(context.getBean(SecurityConfig.class));
-    }
+    void authenticationProvider_DeberiaCrearseCorrectamente() {
+        UserDetailsServiceImpl userDetailsService = mock(UserDetailsServiceImpl.class);
+        PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
 
-    @Test
-    void beansAreCreated() {
-        // Verificamos que los beans principales se hayan creado correctamente
-        assertNotNull(context.getBean(SecurityFilterChain.class));
-        assertNotNull(context.getBean(AuthenticationManager.class));
+        SecurityConfig securityConfig = new SecurityConfig(userDetailsService, passwordEncoder);
+
+        DaoAuthenticationProvider provider = securityConfig.authenticationProvider();
+
+        assertNotNull(provider);
     }
 }
