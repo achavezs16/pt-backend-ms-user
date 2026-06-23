@@ -8,9 +8,9 @@ spring:
     name: ms-user
 
   datasource:
-    url: jdbc:mysql://mysql-user:3306/ms_user
-    username: root
-    password: password
+    url: jdbc:mysql://pymetrack-db.c9wmkhboh8bt.us-east-1.rds.amazonaws.com:3306/ms_user
+    username: pymetrack
+    password: pymetrack123
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
