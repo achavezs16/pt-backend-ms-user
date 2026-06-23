@@ -8,7 +8,7 @@ spring:
     name: ms-user
 
   datasource:
-    url: jdbc:mysql://localhost:3313/ms_user?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://mysql-user:3306/ms_user
     username: root
     password: password
     driver-class-name: com.mysql.cj.jdbc.Driver
