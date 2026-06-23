@@ -8,7 +8,7 @@ spring:
     name: ms-user
 
   datasource:
-    url: jdbc:mysql://pymetrack-db.c9wmkhboh8bt.us-east-1.rds.amazonaws.com:3306/ms_user
+    url: jdbc:mysql://pymetrack-db.c9wmkhboh8bt.us-east-1.rds.amazonaws.com:3306/ms_user?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: pymetrack
     password: pymetrack123
     driver-class-name: com.mysql.cj.jdbc.Driver
